@@ -1,0 +1,72 @@
+{{- if .Values.Consul.Backup.Enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ template "vault.fullname" . }}-{{.Values.Consul.Backup.ComponentName}}"
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-{{ .Values.Consul.Backup.ComponentName }}"
+spec:
+  replicas: {{ .Values.Consul.Backup.Replicas }}
+  selector:
+    matchLabels:
+      release: {{ .Release.Name | quote }}
+      component: "{{ .Release.Name }}-{{ .Values.Consul.Backup.ComponentName }}"
+  template:
+    metadata:
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: {{ template "vault.chart" . }}
+        component: "{{ .Release.Name }}-{{ .Values.Consul.Backup.ComponentName }}"
+    spec:
+      containers:
+      - name: "{{ template "vault.fullname" . }}-{{.Values.Consul.Backup.ComponentName}}"
+        image: "{{.Values.Consul.Backup.Image}}:{{.Values.Consul.Backup.ImageTag}}"
+        imagePullPolicy: {{.Values.Consul.Backup.ImagePullPolicy}}
+        env:
+        - name: "CONSUL_ARGS"
+          value: -config-dir=/consul/config -config-dir=/consul/secrets
+        - name: "S3_URL"
+          value: {{.Values.Consul.Backup.S3URL}}/
+        - name: "SLEEP_DURATION"
+          value: {{.Values.Consul.Backup.SleepDuration | quote}}
+        resources:
+          limits:
+            cpu: {{ .Values.Consul.Backup.Cpu }}
+            memory: {{ .Values.Consul.Backup.Memory }}
+          requests:
+            cpu: {{ .Values.Consul.Backup.Cpu }}
+            memory: {{ .Values.Consul.Backup.Memory }}
+        volumeMounts:
+        - name: consul-config
+          mountPath: /consul/config
+          readOnly: false
+        - name: tls-consul
+          mountPath: /consul/tls
+          readOnly: true
+        - name: ca-consul
+          mountPath: /consul/ca
+          readOnly: true
+        - name: gossip-key
+          mountPath: /consul/secrets
+          readOnly: true
+      volumes:
+      - name: consul-config
+        configMap:
+          name: "{{ template "vault.fullname" . }}-{{.Values.Consul.Backup.ComponentName}}"
+          items:
+          - key: config.json
+            path: config.json
+      - name: ca-consul
+        secret:
+          secretName: {{ template "vault.fullname" . }}-consul.ca
+      - name: tls-consul
+        secret:
+          secretName: {{ template "vault.fullname" . }}-consul.tls
+      - name: gossip-key
+        secret:
+          secretName: {{ template "vault.fullname" . }}-consul-gossip-json
+{{- end }}

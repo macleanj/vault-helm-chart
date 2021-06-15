@@ -1,0 +1,61 @@
+{{- if .Values.Vault.Ingress.Enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ template "vault.fullname" . }}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-{{ .Values.Vault.ComponentName }}"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: {{.Values.Vault.Tls.ServerName}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "vault.fullname" . }}
+            port:
+              number: {{.Values.Vault.HttpPort}}
+    {{- $root := . -}}
+    {{- range .Values.Vault.Tls.AlternateServerNames | split "," }}
+  - host: {{ . | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: "{{ template "vault.fullname" $root }}"
+            port:
+              number: {{$root.Values.Vault.HttpPort}}
+    {{- end }}
+{{- end }}
+
+{{/*
+spec:
+  rules:
+    - host: {{.Values.Vault.Tls.ServerName}}
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: {{ template "vault.fullname" . }}
+            servicePort: {{.Values.Vault.HttpPort}}
+    {{- $root := . -}}
+    {{- range .Values.Vault.Tls.AlternateServerNames | split "," }}
+    - host: {{ . | quote }}
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: "{{ template "vault.fullname" $root }}"
+            servicePort: {{$root.Values.Vault.HttpPort}}
+    {{- end }}
+{{- end }}
+*/}}

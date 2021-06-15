@@ -1,0 +1,75 @@
+{{- if .Release.IsInstall }}
+{{- if .Values.Consul.Restore.RestoreFile }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "vault.fullname" . }}-{{.Values.Consul.Restore.ComponentName}}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-{{ .Values.Consul.Restore.ComponentName }}"
+spec:
+  activeDeadlineSeconds: 100
+  template:
+    metadata:
+      name: {{ template "vault.fullname" . }}-{{.Values.Consul.Restore.ComponentName}}
+      labels:
+        heritage: {{ .Release.Service | quote }}
+        release: {{ .Release.Name | quote }}
+        chart: {{ template "vault.chart" . }}
+        component: "{{ .Release.Name }}-{{ .Values.Consul.Restore.ComponentName }}"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: {{ template "vault.fullname" . }}-{{.Values.Consul.Restore.ComponentName}}
+        image: "{{.Values.Consul.Backup.Image}}:{{.Values.Consul.Backup.ImageTag}}"
+        imagePullPolicy: {{.Values.Consul.Backup.ImagePullPolicy}}
+        env:
+        - name: "CONSUL_ARGS"
+          value: -config-dir=/consul/config -config-dir=/consul/secrets
+        - name: "S3_URL"
+          value: {{.Values.Consul.Restore.S3URL}}
+        - name: "AWS_ACCESS_KEY_ID"
+          value: "{{.Values.Consul.Restore.AwsAccessKeyId}}"
+        - name: "AWS_SECRET_ACCESS_KEY"
+          value: "{{.Values.Consul.Restore.AwsSecretAccessKey}}"
+        command:
+          - "/bin/sh"
+          - "-ec"
+          - |
+            /init.sh {{.Values.Consul.Restore.RestoreFile}}
+        volumeMounts:
+        - name: consul-config
+          mountPath: /consul/config
+          readOnly: false
+        - name: tls-consul
+          mountPath: /consul/tls
+          readOnly: true
+        - name: ca-consul
+          mountPath: /consul/ca
+          readOnly: true
+        - name: gossip-key
+          mountPath: /consul/secrets
+          readOnly: true
+      volumes:
+      - name: consul-config
+        configMap:
+          name: {{ template "vault.fullname" . }}-{{.Values.Consul.Restore.ComponentName}}
+          items:
+          - key: config.json
+            path: config.json
+      - name: tls
+        secret:
+          secretName: {{ template "vault.fullname" . }}.tls
+      - name: ca-consul
+        secret:
+          secretName: {{ template "vault.fullname" . }}-consul.ca
+      - name: tls-consul
+        secret:
+          secretName: {{ template "vault.fullname" . }}-consul.tls
+      - name: gossip-key
+        secret:
+          secretName: {{ template "vault.fullname" . }}-consul-gossip-json
+{{- end }}
+{{- end }}

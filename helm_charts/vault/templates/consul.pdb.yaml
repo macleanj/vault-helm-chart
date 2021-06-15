@@ -1,0 +1,22 @@
+# PodDisruptionBudget to prevent degrading the Consul cluster through
+# voluntary cluster changes.
+{{- if (and (ne (.Values.Consul.maxUnavailable | toString) "-") .Values.Consul.maxUnavailable) }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ template "vault.fullname" . }}-{{.Values.Consul.ComponentName}}
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-{{.Values.Consul.ComponentName}}"
+spec:
+  maxUnavailable: {{ template "consul.pdb.maxUnavailable" . }}
+  selector:
+    matchLabels:
+      heritage: {{ .Release.Service | quote }}
+      release: {{ .Release.Name | quote }}
+      chart: {{ template "vault.chart" . }}
+      component: "{{ .Release.Name }}-{{.Values.Consul.ComponentName}}"
+{{- end }}
+

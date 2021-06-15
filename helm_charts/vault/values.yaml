@@ -1,0 +1,105 @@
+# Default values for Vault.
+# This is a YAML-formatted file.
+
+# Consul storage backend configuration
+Consul:
+  ComponentName: "consul"
+  Cpu: "150m"
+  Datacenter: "dc1"
+  Image: "consul"
+  ImageTag: "1.4.4"
+  ImagePullPolicy: "IfNotPresent"
+  Memory: "320Mi"
+  Replicas: 5
+  maxUnavailable: 2
+  updatePartition: 0  # Use to control a careful rolling update.
+  HttpPort: 8500
+  SerflanPort: 8301
+  SerflanUdpPort: 8301
+  SerfwanPort: 8302
+  SerfwanUdpPort: 8302
+  ServerPort: 8300
+  ConsulDnsPort: 8600
+  PreInstall:
+    ComponentName: "consul-preinstall"
+    JobDeadline: 60
+    Tls:
+      CountryName: "US"
+      LocalityName: "placeholder"
+      EmailAddress: "placeholder@placeholder.com"
+      OrganizationName: "placeholder"
+      StateOrProvinceName: "CO"
+      OrganizationUnitName: "placeholder"
+  Backup:
+    Enabled: false
+    ComponentName: "backup"
+    Replicas: 1
+    ImagePullPolicy: "Always"
+    Image: "thorix/consul-backup"
+    ImageTag: "latest"
+    Cpu: "512m"
+    Memory: "200Mi"
+    S3URL: "" # {{ .Release.Name }} will get added to the end
+    SleepDuration: 7200 # 2 hours
+
+  Restore:
+    ComponentName: "restore"
+    S3URL: ""
+    RestoreFile: "" # file name to restore from s3
+    AwsAccessKeyId: ""
+    AwsSecretAccessKey: ""
+
+# Vault server configuration
+Vault:
+  ComponentName: "vault"
+  AutoUnseal: false
+  HttpPort: 8200
+  HaForwardingPort: 8201
+  Ingress:
+    Enabled: true # If enabled, will use service type ClusterIP
+  NodePort: 30825 # Ignored if Ingress.Enabled = true
+  Image: "vault"
+  ImageTag: "1.1.0"
+  ImagePullPolicy: "IfNotPresent"
+  LogLevel: "info"
+  Replicas: 3
+  maxUnavailable: 1
+  Cpu: "512m"
+  Memory: "384Mi"
+  # HostAliases:
+  # - ip: "127.0.0.1"
+  #   hostnames:
+  #   - "foo.local"
+  DisableConsulRegistration: "false"
+  DefaultLeaseTtl: "768h"
+  MaxLeaseTtl: "768h"
+  Readiness:
+    readyIfStandby: true
+    readyIfSealed: false
+    readyIfUninitialized: true
+  ConsulClient:
+    ComponentName: "consul-client"
+  PreInstall:
+    ComponentName: "vault-preinstall"
+    JobDeadline: 60
+  Tls:
+    ServerName: "vault.consul"
+    AlternateServerNames: "vault-alt.consul" # Comma separated
+    CertString: ""
+    KeyString: ""
+    LetsEncrypt:
+      Enabled: false
+      Environment: "stage" # production/stage
+      AcmeAccountKey: "s3://<bucket-name>/stage.pem"
+  Ui:
+    Enabled: true
+Misc:
+  kubectl:
+    Image: "bartlettc/docker-kubectl"
+    ImageTag: "latest"
+  omgwtfssl:
+    Image: "bartlettc/omgwtfssl-kubernetes"
+    ImageTag: "latest"
+  letsencrypt:
+    Image: "bartlettc/letsencrypt-acm"
+    ImageTag: "kubernetes"

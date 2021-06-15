@@ -1,0 +1,13 @@
+{{- if .Values.Vault.AutoUnseal }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "vault.fullname" . }}-post-start
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-post-start"
+data:
+{{ (.Files.Glob "postStart/*").AsConfig | indent 2 }}
+{{- end }}

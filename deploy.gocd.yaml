@@ -1,0 +1,53 @@
+pipelines:
+  vault-deploy-test:
+    group: vault
+    label_template: "${gitBranches[:8]}"
+    materials:
+      gitBranches:
+        scm: 527fb0d8-c691-4693-a601-20a26ddd7d41
+    stages:
+      - helm-lint:
+          clean_workspace: true
+          jobs:
+            helm-lint:
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: "./k8s-executor.sh"
+                    arguments:
+                      - "./tests/helm/010-lint.sh"
+      - helm-install:
+          clean_workspace: true
+          jobs:
+            helm-install:
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: "./k8s-executor.sh"
+                    arguments:
+                      - "./tests/helm/020-deploy.sh"
+      - vault-init-unseal:
+          clean_workspace: true
+          jobs:
+            vault-init-unseal:
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: "./k8s-executor.sh"
+                    arguments:
+                      - "./tests/helm/030-vault-init-unseal.sh"
+      - cleanup:
+          clean_workspace: true
+          jobs:
+            cleanup:
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    run_if: any
+                    command: "./k8s-executor.sh"
+                    arguments:
+                      - "./tests/helm/050-cleanup.sh"

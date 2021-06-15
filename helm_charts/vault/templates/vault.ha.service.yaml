@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "vault.fullname" . }}-ha
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-{{ .Values.Vault.ComponentName }}"
+spec:
+  ports:
+  - name: ha-forwarding
+    port: {{.Values.Vault.HaForwardingPort}}
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Vault.ComponentName }}"

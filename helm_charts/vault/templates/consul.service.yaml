@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ template "vault.fullname" . }}-{{.Values.Consul.ComponentName}}"
+  labels:
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "vault.chart" . }}
+    component: "{{ .Release.Name }}-{{ .Values.Consul.ComponentName }}"
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+    # This is only here to expose a service so that consul agents
+    # can use K8S DNS for discovery
+    - name: foo
+      port: 80
+  clusterIP: None
+  selector:
+    component: "{{ .Release.Name }}-{{ .Values.Consul.ComponentName }}"
